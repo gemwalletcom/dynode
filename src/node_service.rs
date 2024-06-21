@@ -3,11 +3,11 @@ use http_body_util::{BodyExt, Full};
 use hyper::service::Service;
 use hyper::HeaderMap;
 
+use futures::FutureExt;
 use hyper::{body::Incoming as IncomingBody, Request, Response};
 use hyper_tls::HttpsConnector;
 use hyper_util::client::legacy::Client;
 use std::collections::HashMap;
-use futures::FutureExt;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -57,10 +57,9 @@ async fn proxy_pass(
 
     //TODO: Persist only needed headers
     let mut new_headers = HeaderMap::new();
-    new_headers.append(
-        "Content-Type",
-        original_headers.get("Content-Type").unwrap().clone(),
-    );
+    if let Some(value) = original_headers.get("Content-Type") {
+        new_headers.append("Content-Type", value.clone());
+    }
 
     let mut request = Request::builder()
         .method(method)

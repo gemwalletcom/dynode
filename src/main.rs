@@ -1,9 +1,9 @@
 mod config;
-mod service;
+mod node_service;
 
 use hyper::server::conn::http1;
 use hyper_util::rt::TokioIo;
-use service::NodeService;
+use node_service::NodeService;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
