@@ -1,0 +1,50 @@
+#![allow(unused)]
+
+use std::{collections::HashMap, env, hash::Hasher};
+
+use config::{Config, ConfigError, Environment, File};
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct NodeConfig {
+    pub port: u16,
+    pub address: String,
+    pub domains: Vec<Domain>,
+}
+
+impl NodeConfig {
+    pub fn domains_map(&self) -> HashMap<String, Domain> {
+        let mut map: HashMap<String, Domain> = HashMap::new();
+        for domain in &self.domains {
+            map.insert(domain.domain.clone(), domain.clone());
+        }
+        map
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Domain {
+    pub domain: String,
+    pub urls: Vec<Url>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Url {
+    pub url: String,
+}
+
+impl NodeConfig {
+    pub fn new() -> Result<Self, ConfigError> {
+        let current_dir = env::current_dir().unwrap();
+        let setting_path = current_dir.join("config.yml");
+        let s = Config::builder()
+            .add_source(File::from(setting_path))
+            .add_source(
+                Environment::with_prefix("")
+                    .prefix_separator("")
+                    .separator("_"),
+            )
+            .build()?;
+        s.try_deserialize()
+    }
+}
