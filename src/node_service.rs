@@ -2,7 +2,7 @@ use bytes::Bytes;
 use http_body_util::{BodyExt, Full};
 use hyper::header::{self, HeaderName};
 use hyper::service::Service;
-use hyper::{HeaderMap, Uri};
+use hyper::HeaderMap;
 
 use futures::FutureExt;
 use hyper::{body::Incoming as IncomingBody, Request, Response};
@@ -13,17 +13,12 @@ use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
 
-use crate::config::{Domain, Url};
+use crate::config::Domain;
+use crate::request_url::RequestUrl;
 
 #[derive(Debug, Clone)]
 pub struct NodeService {
     pub domains: HashMap<String, Domain>,
-}
-
-#[derive(Debug, Clone)]
-pub struct RequestUrl {
-    pub uri: Uri,
-    pub params: HashMap<String, String>,
 }
 
 impl Service<Request<IncomingBody>> for NodeService {
@@ -44,7 +39,7 @@ impl Service<Request<IncomingBody>> for NodeService {
         match self.domains.get(host) {
             Some(domain) => {
                 let url = domain.urls.first().unwrap().clone();
-                let url = uri(
+                let url = RequestUrl::from_uri(
                     url,
                     domain.urls_override.clone().unwrap_or_default(),
                     req.uri(),
@@ -54,31 +49,6 @@ impl Service<Request<IncomingBody>> for NodeService {
             }
             _ => async move { unsupported_chain(req).await }.boxed(), //async move { handle_request(req).await }.boxed(), //Ok(Response::new(Full::from("unsupported domain")))},
         }
-    }
-}
-
-fn uri(url: Url, urls_override: HashMap<String, Url>, original_uri: &Uri) -> RequestUrl {
-    let uri = url.url + original_uri.to_string().as_str();
-    let uri = uri.parse::<hyper::Uri>().expect("invalid url");
-
-    // first order is url and the global
-    let urls_override = vec![url.urls_override.unwrap_or_default(), urls_override];
-
-    for override_url in urls_override {
-        for (path, endpoint) in override_url {
-            if uri.path() == path {
-                let uri = Uri::from_str(&endpoint.url.clone().as_str()).unwrap();
-                return RequestUrl {
-                    uri,
-                    params: endpoint.headers.unwrap_or_default(),
-                };
-            }
-        }
-    }
-
-    RequestUrl {
-        uri,
-        params: url.headers.unwrap_or_default(),
     }
 }
 
