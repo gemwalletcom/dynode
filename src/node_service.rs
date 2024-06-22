@@ -55,6 +55,8 @@ async fn proxy_pass(
 ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
     let client = Client::builder(hyper_util::rt::TokioExecutor::new()).build(HttpsConnector::new());
 
+    let keep_headers = vec![header::CONTENT_TYPE, header::CONTENT_ENCODING];
+
     // request
     let original_headers = original_request.headers().clone();
     let mut request = Request::builder()
@@ -63,7 +65,7 @@ async fn proxy_pass(
         .body(original_request.into_body())
         .expect("invalid request params");
 
-    *request.headers_mut() = persist_headers(&original_headers, &vec![header::CONTENT_TYPE]);
+    *request.headers_mut() = persist_headers(&original_headers, &keep_headers);
 
     // response
     let response = client.request(request).await?;
@@ -71,7 +73,7 @@ async fn proxy_pass(
     let body = response.collect().await?.to_bytes();
 
     let mut new_response = Response::new(Full::from(body));
-    *new_response.headers_mut() = persist_headers(&resp_headers, &vec![header::CONTENT_TYPE]);
+    *new_response.headers_mut() = persist_headers(&resp_headers, &keep_headers);
 
     Ok(new_response)
 }
