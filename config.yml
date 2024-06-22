@@ -9,5 +9,8 @@ domains:
         # override_urls:
         #   "/":
         #     url: https://rpc.ankr.com/eth
-        #     headers:
-        #       x-api-key: test2
+        #     override_urls:
+        #       "/":
+        #         url: https://rpc.ankr.com/eth
+        #headers:
+        #  x-api-key: test2

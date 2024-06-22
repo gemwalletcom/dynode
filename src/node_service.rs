@@ -44,8 +44,11 @@ impl Service<Request<IncomingBody>> for NodeService {
         match self.domains.get(host) {
             Some(domain) => {
                 let url = domain.urls.first().unwrap().clone();
-
-                let url = uri(url, req.uri());
+                let url = uri(
+                    url,
+                    domain.override_urls.clone().unwrap_or_default(),
+                    req.uri(),
+                );
 
                 async move { proxy_pass(req, url).await }.boxed()
             }
@@ -54,17 +57,22 @@ impl Service<Request<IncomingBody>> for NodeService {
     }
 }
 
-fn uri(url: Url, original_uri: &Uri) -> RequestUrl {
+fn uri(url: Url, override_urls: HashMap<String, Url>, original_uri: &Uri) -> RequestUrl {
     let uri = url.url + original_uri.to_string().as_str();
     let uri = uri.parse::<hyper::Uri>().expect("invalid url");
 
-    for (path, endpoint) in url.override_urls.unwrap_or_default().clone() {
-        if uri.path() == path {
-            let uri = Uri::from_str(&endpoint.url.clone().as_str()).unwrap();
-            return RequestUrl {
-                uri,
-                params: endpoint.headers.unwrap_or_default(),
-            };
+    // first order is url and the global
+    let override_urls = vec![url.override_urls.unwrap_or_default(), override_urls];
+
+    for override_url in override_urls {
+        for (path, endpoint) in override_url {
+            if uri.path() == path {
+                let uri = Uri::from_str(&endpoint.url.clone().as_str()).unwrap();
+                return RequestUrl {
+                    uri,
+                    params: endpoint.headers.unwrap_or_default(),
+                };
+            }
         }
     }
 
