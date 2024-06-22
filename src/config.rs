@@ -31,6 +31,8 @@ pub struct Domain {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Url {
     pub url: String,
+    pub headers: Option<HashMap<String, String>>,
+    pub override_urls: Option<HashMap<String, Url>>,
 }
 
 impl NodeConfig {
