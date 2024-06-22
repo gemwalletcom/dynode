@@ -26,14 +26,14 @@ impl NodeConfig {
 pub struct Domain {
     pub domain: String,
     pub urls: Vec<Url>,
-    pub override_urls: Option<HashMap<String, Url>>,
+    pub urls_override: Option<HashMap<String, Url>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Url {
     pub url: String,
     pub headers: Option<HashMap<String, String>>,
-    pub override_urls: Option<HashMap<String, Url>>,
+    pub urls_override: Option<HashMap<String, Url>>,
 }
 
 impl NodeConfig {

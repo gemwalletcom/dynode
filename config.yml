@@ -6,10 +6,10 @@ domains:
       - url: https://eth.llamarpc.com
         headers:
           x-api-key: test
-        # override_urls:
+        # urls_override:
         #   "/":
         #     url: https://rpc.ankr.com/eth
-        #     override_urls:
+        #     urls_override:
         #       "/":
         #         url: https://rpc.ankr.com/eth
         #headers:

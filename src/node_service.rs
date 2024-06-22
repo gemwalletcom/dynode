@@ -46,7 +46,7 @@ impl Service<Request<IncomingBody>> for NodeService {
                 let url = domain.urls.first().unwrap().clone();
                 let url = uri(
                     url,
-                    domain.override_urls.clone().unwrap_or_default(),
+                    domain.urls_override.clone().unwrap_or_default(),
                     req.uri(),
                 );
 
@@ -57,14 +57,14 @@ impl Service<Request<IncomingBody>> for NodeService {
     }
 }
 
-fn uri(url: Url, override_urls: HashMap<String, Url>, original_uri: &Uri) -> RequestUrl {
+fn uri(url: Url, urls_override: HashMap<String, Url>, original_uri: &Uri) -> RequestUrl {
     let uri = url.url + original_uri.to_string().as_str();
     let uri = uri.parse::<hyper::Uri>().expect("invalid url");
 
     // first order is url and the global
-    let override_urls = vec![url.override_urls.unwrap_or_default(), override_urls];
+    let urls_override = vec![url.urls_override.unwrap_or_default(), urls_override];
 
-    for override_url in override_urls {
+    for override_url in urls_override {
         for (path, endpoint) in override_url {
             if uri.path() == path {
                 let uri = Uri::from_str(&endpoint.url.clone().as_str()).unwrap();
