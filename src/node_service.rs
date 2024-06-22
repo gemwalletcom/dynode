@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use http_body_util::{BodyExt, Full};
-use hyper::header::{self, HeaderName, USER_AGENT};
+use hyper::header::{self, HeaderName};
 use hyper::service::Service;
 use hyper::HeaderMap;
 
@@ -26,8 +26,9 @@ impl Service<Request<IncomingBody>> for NodeService {
 
     fn call(&self, req: Request<IncomingBody>) -> Self::Future {
         let host = req.headers().get("host").unwrap().to_str().unwrap();
-        //let USER_AGENT =
-        //println!("host: {}, user-agent: {}", host, req.headers().get("key"));
+        let user_agent = req.headers().get(header::USER_AGENT);
+
+        println!("{} {} {} {:?}", host, req.method(), req.uri(), user_agent);
 
         match self.domains.get(host) {
             Some(domain) => {

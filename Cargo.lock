@@ -218,7 +218,6 @@ dependencies = [
  "hyper-tls",
  "hyper-util",
  "serde",
- "serde_json",
  "tokio",
 ]
 
