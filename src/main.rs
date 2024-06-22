@@ -1,4 +1,5 @@
 mod config;
+mod logger;
 mod node_service;
 mod request_url;
 

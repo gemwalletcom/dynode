@@ -14,6 +14,7 @@ use std::pin::Pin;
 use std::str::FromStr;
 
 use crate::config::Domain;
+use crate::logger::log_incoming_request;
 use crate::request_url::RequestUrl;
 
 #[derive(Debug, Clone)]
@@ -34,7 +35,7 @@ impl Service<Request<IncomingBody>> for NodeService {
             .to_str()
             .unwrap_or_default();
 
-        log_request(&req);
+        log_incoming_request(&req);
 
         match self.domains.get(host) {
             Some(domain) => {
@@ -50,24 +51,6 @@ impl Service<Request<IncomingBody>> for NodeService {
             _ => async move { unsupported_chain(req).await }.boxed(), //async move { handle_request(req).await }.boxed(), //Ok(Response::new(Full::from("unsupported domain")))},
         }
     }
-}
-
-fn log_request(request: &Request<IncomingBody>) {
-    let headers = request.headers().clone();
-    let user_agent = headers.get(header::USER_AGENT);
-    let host = headers
-        .get("host")
-        .expect("invalid host")
-        .to_str()
-        .unwrap_or_default();
-
-    println!(
-        "{} {} {} {:?}",
-        host,
-        request.method(),
-        request.uri(),
-        user_agent
-    );
 }
 
 async fn unsupported_chain(
