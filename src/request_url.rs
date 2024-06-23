@@ -13,24 +13,19 @@ pub struct RequestUrl {
 impl RequestUrl {
     pub fn from_uri(
         url: Url,
-        urls_override: HashMap<String, Url>,
+        url_override: HashMap<String, Url>,
         original_uri: &Uri,
     ) -> RequestUrl {
         let uri = url.url + original_uri.to_string().as_str();
         let uri = uri.parse::<hyper::Uri>().expect("invalid url");
 
-        // first order is url and the global
-        let urls_override = vec![url.urls_override.unwrap_or_default(), urls_override];
-
-        for override_url in urls_override {
-            for (path, endpoint) in override_url {
-                if uri.path() == path {
-                    let uri = Uri::from_str(&endpoint.url.clone().as_str()).unwrap();
-                    return RequestUrl {
-                        uri,
-                        params: endpoint.headers.unwrap_or_default(),
-                    };
-                }
+        for (path, endpoint) in url_override.clone() {
+            if uri.path() == path {
+                let uri = Uri::from_str(&endpoint.url.clone().as_str()).unwrap();
+                return RequestUrl {
+                    uri,
+                    params: endpoint.headers.unwrap_or_default(),
+                };
             }
         }
 
