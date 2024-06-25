@@ -5,6 +5,8 @@ use std::{collections::HashMap, env, hash::Hasher};
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 
+use crate::chain_type::ChainType;
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct NodeConfig {
     pub port: u16,
@@ -25,6 +27,8 @@ impl NodeConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Domain {
     pub domain: String,
+    pub chain_type: ChainType,
+    pub block_delay: Option<u64>,
     pub urls: Vec<Url>,
     pub urls_override: Option<HashMap<String, Url>>,
 }

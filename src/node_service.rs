@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
+    chain_service::ChainService,
+    chain_type::ChainType,
     config::Domain,
     proxy_request_service::{NodeDomain, ProxyRequestService},
 };
@@ -29,5 +31,29 @@ impl NodeService {
                 (key, NodeDomain { url, urls_override })
             })
             .collect()
+    }
+
+    pub async fn update_block_numbers(&self) {
+        for (_, domain) in self.domains.clone() {
+            for url in domain.urls.clone() {
+                let _ = self
+                    .update_latest_block(domain.chain_type.clone(), url.url.as_str())
+                    .await;
+            }
+        }
+    }
+
+    pub async fn update_latest_block(&self, chain_type: ChainType, url: &str) {
+        let chain_service = ChainService {
+            chain_type: chain_type.clone(),
+            url: url.to_string(),
+        };
+
+        let res = chain_service.get_block_number().await;
+
+        println!(
+            "update_latest_block: chain_type: {:?}, url: {} {:?}",
+            chain_type, url, res
+        );
     }
 }

@@ -1,3 +1,5 @@
+mod chain_service;
+mod chain_type;
 mod config;
 mod logger;
 mod node_service;
@@ -23,6 +25,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let node_service = NodeService {
         domains: config.domains_map(),
     };
+
+    let clone = node_service.clone();
+    tokio::task::spawn(async move {
+        clone.clone().update_block_numbers().await;
+    });
 
     loop {
         let (stream, _) = listener.accept().await?;
