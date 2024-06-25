@@ -26,10 +26,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         domains: config.domains_map(),
     };
 
-    let clone = node_service.clone();
-    tokio::task::spawn(async move {
-        clone.clone().update_block_numbers().await;
-    });
+    // let clone = node_service.clone();
+    // tokio::task::spawn(async move {
+    //     clone.clone().update_block_numbers().await;
+    // });
 
     loop {
         let (stream, _) = listener.accept().await?;
