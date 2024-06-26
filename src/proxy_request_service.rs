@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
+use std::time::Instant;
 
 use crate::config::Url;
 use crate::logger::{log_incoming_request, log_proxy_response};
@@ -55,7 +56,26 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
 
                 self.metrics.add_proxy_request(host);
 
-                async move { proxy_pass(req, url).await }.boxed()
+                let metrics = self.metrics.clone();
+                let host = host.to_string();
+
+                async move {
+                    let now = Instant::now();
+
+                    let response = Self::proxy_pass_get_data(req, url.clone()).await?;
+
+                    log_proxy_response(&url, &response);
+
+                    metrics.add_proxy_response(
+                        host.as_str(),
+                        url.uri.host().unwrap_or_default(),
+                        response.status().as_u16(),
+                        now.elapsed().as_millis(),
+                    );
+
+                    Self::proxy_pass_response(response).await
+                }
+                .boxed()
             }
             _ => async move {
                 Ok(Response::builder()
@@ -67,55 +87,61 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
     }
 }
 
-async fn proxy_pass(
-    original_request: Request<IncomingBody>,
-    url: RequestUrl,
-) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
-    let client = Client::builder(hyper_util::rt::TokioExecutor::new()).build(HttpsConnector::new());
+impl ProxyRequestService {
+    async fn proxy_pass_response(
+        response: Response<IncomingBody>,
+    ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
+        let keep_headers = vec![header::CONTENT_TYPE, header::CONTENT_ENCODING];
 
-    let keep_headers = vec![header::CONTENT_TYPE, header::CONTENT_ENCODING];
+        let resp_headers = response.headers().clone();
+        let body = response.collect().await?.to_bytes();
 
-    // request
-    let original_headers = original_request.headers().clone();
-    let mut request = Request::builder()
-        .method(original_request.method())
-        .uri(url.clone().uri)
-        .body(original_request.into_body())
-        .expect("invalid request params");
+        let mut new_response = Response::new(Full::from(body));
+        *new_response.headers_mut() = Self::persist_headers(&resp_headers, &keep_headers);
 
-    // append url params
-    let mut new_headers = persist_headers(&original_headers, &keep_headers);
-    for (key, value) in url.params.clone() {
-        new_headers.append(
-            HeaderName::from_str(&key).unwrap(),
-            value.clone().parse().unwrap(),
-        );
+        Ok(new_response)
     }
-    *request.headers_mut() = new_headers;
 
-    // response
-    let response = client.request(request).await?;
+    async fn proxy_pass_get_data(
+        original_request: Request<IncomingBody>,
+        url: RequestUrl,
+    ) -> Result<Response<IncomingBody>, Box<dyn std::error::Error + Send + Sync>> {
+        let client =
+            Client::builder(hyper_util::rt::TokioExecutor::new()).build(HttpsConnector::new());
 
-    log_proxy_response(&url, &response);
+        let keep_headers = vec![header::CONTENT_TYPE, header::CONTENT_ENCODING];
 
-    let resp_headers = response.headers().clone();
-    let body = response.collect().await?.to_bytes();
+        // request
+        let original_headers = original_request.headers().clone();
+        let mut request = Request::builder()
+            .method(original_request.method())
+            .uri(url.clone().uri)
+            .body(original_request.into_body())
+            .expect("invalid request params");
 
-    let mut new_response = Response::new(Full::from(body));
-    *new_response.headers_mut() = persist_headers(&resp_headers, &keep_headers);
+        // append url params
+        let mut new_headers = Self::persist_headers(&original_headers, &keep_headers);
+        for (key, value) in url.params.clone() {
+            new_headers.append(
+                HeaderName::from_str(&key).unwrap(),
+                value.clone().parse().unwrap(),
+            );
+        }
+        *request.headers_mut() = new_headers;
 
-    Ok(new_response)
-}
+        Ok(client.request(request).await?)
+    }
 
-pub fn persist_headers(headers: &HeaderMap, list: &[HeaderName]) -> HeaderMap {
-    headers
-        .iter()
-        .filter_map(|(k, v)| {
-            if list.contains(&k) {
-                Some((k.clone(), v.clone()))
-            } else {
-                None
-            }
-        })
-        .collect()
+    pub fn persist_headers(headers: &HeaderMap, list: &[HeaderName]) -> HeaderMap {
+        headers
+            .iter()
+            .filter_map(|(k, v)| {
+                if list.contains(&k) {
+                    Some((k.clone(), v.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
 }

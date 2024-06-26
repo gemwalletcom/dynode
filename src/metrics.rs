@@ -2,34 +2,39 @@ use std::sync::Arc;
 
 use prometheus_client::encoding::text::encode;
 use prometheus_client::encoding::EncodeLabelSet;
+
 use prometheus_client::metrics::family::Family;
 use prometheus_client::metrics::gauge::Gauge;
+use prometheus_client::metrics::histogram::{exponential_buckets, Histogram};
 use prometheus_client::registry::Registry;
 
 #[derive(Debug, Clone)]
 pub struct Metrics {
     registry: Arc<Registry>,
     proxy_requests: Family<HostStateLabels, Gauge>,
-    proxy_responses: Family<ProxyStateLabels, Gauge>,
+    proxy_response_latency: Family<ResponseLabels, Histogram>,
     node_block_latest: Family<HostStateLabels, Gauge>,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
-pub(crate) struct HostStateLabels {
+pub struct HostStateLabels {
     host: String,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
-pub(crate) struct ProxyStateLabels {
+#[derive(Clone, Hash, PartialEq, Eq, Debug, EncodeLabelSet)]
+struct ResponseLabels {
     host: String,
-    status: u64,
-    latency: u64,
+    remote_host: String,
+    status: u16,
 }
 
 impl Metrics {
     pub fn new() -> Self {
         let proxy_requests = Family::<HostStateLabels, Gauge>::default();
-        let proxy_responses = Family::<ProxyStateLabels, Gauge>::default();
+        let proxy_response_latency =
+            Family::<ResponseLabels, Histogram>::new_with_constructor(|| {
+                Histogram::new(exponential_buckets(50.0, 2.0, 10))
+            });
         let node_block_latest = Family::<HostStateLabels, Gauge>::default();
 
         let mut registry = <Registry>::with_prefix("dynode");
@@ -39,9 +44,9 @@ impl Metrics {
             proxy_requests.clone(),
         );
         registry.register(
-            "proxy_responses_total",
+            "proxy_response_latency",
             "Proxy requests served a response by host",
-            proxy_responses.clone(),
+            proxy_response_latency.clone(),
         );
         registry.register(
             "node_block_latest",
@@ -52,7 +57,7 @@ impl Metrics {
         Self {
             registry: Arc::new(registry),
             proxy_requests,
-            proxy_responses,
+            proxy_response_latency,
             node_block_latest,
         }
     }
@@ -65,14 +70,14 @@ impl Metrics {
             .inc();
     }
 
-    pub fn add_proxy_response(&self, host: &str, status: u64, latency: u64) {
-        self.proxy_responses
-            .get_or_create(&ProxyStateLabels {
+    pub fn add_proxy_response(&self, host: &str, remote_host: &str, status: u16, latency: u128) {
+        self.proxy_response_latency
+            .get_or_create(&ResponseLabels {
                 host: host.to_string(),
+                remote_host: remote_host.to_string(),
                 status,
-                latency,
             })
-            .inc();
+            .observe(latency as f64);
     }
 
     pub fn set_node_block_latest(&self, host: &str, value: u64) {
