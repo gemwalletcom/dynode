@@ -57,16 +57,12 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
 
                 async move { proxy_pass(req, url).await }.boxed()
             }
-            _ => {
-                self.metrics.add_proxy_request("");
-
-                async move {
-                    Ok(Response::builder()
-                        .body(Full::new(Bytes::from("unsupported domain")))
-                        .unwrap())
-                }
-                .boxed()
+            _ => async move {
+                Ok(Response::builder()
+                    .body(Full::new(Bytes::from("unsupported domain")))
+                    .unwrap())
             }
+            .boxed(),
         }
     }
 }
