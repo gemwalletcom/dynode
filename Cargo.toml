@@ -16,4 +16,4 @@ hyper-util = { version = "0.1.5", features = ["client-legacy", "http1"] }
 hyper-tls = { version = "0.6.0" }
 http-body-util = { version = "0.1.2" }
 futures = { version = "0.3.30" }
-#prometheus-client = { version = "0.22.2" }
+prometheus-client = { version = "0.22.2" }

@@ -61,7 +61,9 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
 async fn unsupported_chain(
     _req: Request<IncomingBody>,
 ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
-    Err("Unsupported domain: {}".into())
+    Ok(Response::builder()
+        .body(Full::new(Bytes::from("unsupported domain")))
+        .unwrap())
 }
 
 async fn proxy_pass(

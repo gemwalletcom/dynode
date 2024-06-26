@@ -11,6 +11,7 @@ use crate::{chain_type::ChainType, node_service::NodeResult, proxy_request_servi
 pub struct NodeConfig {
     pub port: u16,
     pub address: String,
+    pub metrics: Metrics,
     pub domains: Vec<Domain>,
 }
 
@@ -22,6 +23,12 @@ impl NodeConfig {
         }
         map
     }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Metrics {
+    pub port: u16,
+    pub address: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -68,15 +75,8 @@ impl Domain {
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Url {
     pub url: String,
-    pub backup: Option<bool>,
     pub headers: Option<HashMap<String, String>>,
     pub urls_override: Option<HashMap<String, Url>>,
-}
-
-impl Url {
-    pub fn is_primary(&self) -> bool {
-        self.backup.unwrap_or(false) == true
-    }
 }
 
 impl NodeConfig {
