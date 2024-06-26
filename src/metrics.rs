@@ -40,7 +40,7 @@ impl Metrics {
 
         let mut registry = <Registry>::with_prefix("dynode");
         registry.register(
-            "proxy_requests_total",
+            "proxy_requests",
             "Proxy requests by host",
             proxy_requests.clone(),
         );
