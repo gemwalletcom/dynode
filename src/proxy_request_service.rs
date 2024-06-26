@@ -15,11 +15,13 @@ use std::str::FromStr;
 
 use crate::config::Url;
 use crate::logger::{log_incoming_request, log_proxy_response};
+use crate::metrics::Metrics;
 use crate::request_url::RequestUrl;
 
 #[derive(Debug, Clone)]
 pub struct ProxyRequestService {
     pub domains: HashMap<String, NodeDomain>,
+    pub metrics: Metrics,
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +42,8 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
             .to_str()
             .unwrap_or_default();
 
+        self.metrics.add_total_requests();
+
         log_incoming_request(&req);
 
         match self.domains.get(host) {
@@ -51,19 +55,23 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
                     req.uri(),
                 );
 
+                self.metrics.add_proxy_request(host);
+
                 async move { proxy_pass(req, url).await }.boxed()
             }
-            _ => async move { unsupported_chain(req).await }.boxed(), //async move { handle_request(req).await }.boxed(), //Ok(Response::new(Full::from("unsupported domain")))},
+            _ => async move { Self::unsupported_chain(req).await }.boxed(), //async move { handle_request(req).await }.boxed(), //Ok(Response::new(Full::from("unsupported domain")))},
         }
     }
 }
 
-async fn unsupported_chain(
-    _req: Request<IncomingBody>,
-) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Response::builder()
-        .body(Full::new(Bytes::from("unsupported domain")))
-        .unwrap())
+impl ProxyRequestService {
+    async fn unsupported_chain(
+        _req: Request<IncomingBody>,
+    ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(Response::builder()
+            .body(Full::new(Bytes::from("unsupported domain")))
+            .unwrap())
+    }
 }
 
 async fn proxy_pass(

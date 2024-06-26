@@ -5,8 +5,12 @@ use futures::Future;
 use http_body_util::Full;
 use hyper::{body::Incoming as IncomingBody, service::Service, Request, Response};
 
+use crate::metrics::Metrics;
+
 #[derive(Debug, Clone)]
-pub struct MetricsService {}
+pub struct MetricsService {
+    pub metrics: Metrics,
+}
 
 impl Service<Request<IncomingBody>> for MetricsService {
     type Response = Response<Full<Bytes>>;
@@ -14,11 +18,9 @@ impl Service<Request<IncomingBody>> for MetricsService {
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn call(&self, _req: Request<IncomingBody>) -> Self::Future {
-        fn mk_response(s: String) -> Result<Response<Full<Bytes>>, hyper::Error> {
-            Ok(Response::builder().body(Full::new(Bytes::from(s))).unwrap())
-        }
-
-        let res = mk_response("oh no! not found".into());
+        let res = Ok(Response::builder()
+            .body(Full::new(Bytes::from(self.metrics.get_metrics())))
+            .unwrap());
 
         Box::pin(async { res })
     }

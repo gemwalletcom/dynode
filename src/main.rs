@@ -22,16 +22,11 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let config = config::NodeConfig::new().unwrap();
+    let config = config::NodeConfig::new()?;
 
-    //println!("config: {:?}", config);
-
-    let node_address = SocketAddr::from((
-        IpAddr::from_str(config.address.as_str()).unwrap(),
-        config.port,
-    ));
+    let node_address = SocketAddr::from((IpAddr::from_str(config.address.as_str())?, config.port));
     let metrics_address = SocketAddr::from((
-        IpAddr::from_str(config.metrics.address.as_str()).unwrap(),
+        IpAddr::from_str(config.metrics.address.as_str())?,
         config.metrics.port,
     ));
 
@@ -39,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let metrics_listener = TcpListener::bind(metrics_address).await?;
 
     let metrics = Metrics::new();
-    let node_service = NodeService::new(config.domains_map());
+    let node_service = NodeService::new(config.domains_map(), metrics.clone());
     let node_service_clone = node_service.clone();
     tokio::task::spawn(async move {
         node_service_clone.update_block_numbers().await;
@@ -49,8 +44,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         loop {
             let (stream, _) = node_listener.accept().await.unwrap();
             let io = TokioIo::new(stream);
-
-            metrics.add_total_requests();
 
             let service = node_service.clone().get_proxy_request().await.clone();
 
@@ -67,7 +60,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let (stream, _) = metrics_listener.accept().await.unwrap();
             let io = TokioIo::new(stream);
 
-            let metrics_service = MetricsService {};
+            let metrics_service = MetricsService {
+                metrics: metrics.clone(),
+            };
 
             tokio::task::spawn(async move {
                 if let Err(err) = http1::Builder::new()

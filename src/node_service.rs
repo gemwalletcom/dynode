@@ -5,6 +5,7 @@ use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 
 use crate::config::Url;
+use crate::metrics::Metrics;
 use crate::{
     chain_service::ChainService,
     chain_type::ChainType,
@@ -16,6 +17,7 @@ use crate::{
 pub struct NodeService {
     pub domains: HashMap<String, Domain>,
     pub nodes: Arc<Mutex<HashMap<String, NodeDomain>>>,
+    pub metrics: Metrics,
 }
 
 #[derive(Debug)]
@@ -33,7 +35,7 @@ pub struct NodeResult {
 }
 
 impl NodeService {
-    pub fn new(domains: HashMap<String, Domain>) -> Self {
+    pub fn new(domains: HashMap<String, Domain>, metrics: Metrics) -> Self {
         //
         let mut hash_map: HashMap<String, NodeDomain> = HashMap::new();
 
@@ -45,12 +47,14 @@ impl NodeService {
         Self {
             domains,
             nodes: Arc::new(Mutex::new(hash_map)),
+            metrics,
         }
     }
 
     pub async fn get_proxy_request(&self) -> ProxyRequestService {
         ProxyRequestService {
             domains: self.get_node_domains().await,
+            metrics: self.metrics.clone(),
         }
     }
 
