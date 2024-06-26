@@ -20,10 +20,11 @@ pub fn log_incoming_request(request: &Request<IncomingBody>) {
     );
 }
 
-pub fn log_proxy_response(request: &RequestUrl, response: &Response<IncomingBody>) {
+pub fn log_proxy_response(request: &RequestUrl, response: &Response<IncomingBody>, latency: u128) {
     println!(
-        "proxy service: {:?} {}",
+        "proxy service: {:?} {}, {}mc",
         request.uri.host().unwrap_or_default(),
-        response.status()
+        response.status(),
+        latency,
     );
 }

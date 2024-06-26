@@ -3,6 +3,7 @@ use std::sync::Arc;
 use prometheus_client::encoding::text::encode;
 use prometheus_client::encoding::EncodeLabelSet;
 
+use prometheus_client::metrics::counter::Counter;
 use prometheus_client::metrics::family::Family;
 use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::{exponential_buckets, Histogram};
@@ -11,7 +12,7 @@ use prometheus_client::registry::Registry;
 #[derive(Debug, Clone)]
 pub struct Metrics {
     registry: Arc<Registry>,
-    proxy_requests: Family<HostStateLabels, Gauge>,
+    proxy_requests: Family<HostStateLabels, Counter>,
     proxy_response_latency: Family<ResponseLabels, Histogram>,
     node_block_latest: Family<HostStateLabels, Gauge>,
 }
@@ -30,7 +31,7 @@ struct ResponseLabels {
 
 impl Metrics {
     pub fn new() -> Self {
-        let proxy_requests = Family::<HostStateLabels, Gauge>::default();
+        let proxy_requests = Family::<HostStateLabels, Counter>::default();
         let proxy_response_latency =
             Family::<ResponseLabels, Histogram>::new_with_constructor(|| {
                 Histogram::new(exponential_buckets(50.0, 2.0, 10))

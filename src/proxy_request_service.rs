@@ -64,7 +64,7 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
 
                     let response = Self::proxy_pass_get_data(req, url.clone()).await?;
 
-                    log_proxy_response(&url, &response);
+                    log_proxy_response(&url, &response, now.elapsed().as_millis());
 
                     metrics.add_proxy_response(
                         host.as_str(),
