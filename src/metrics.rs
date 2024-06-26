@@ -35,7 +35,7 @@ impl Metrics {
         let proxy_requests_response = Family::<ProxyStateLabels, Gauge>::default();
         let node_block_latest = Family::<HostStateLabels, Gauge>::default();
 
-        let mut registry = <Registry>::default();
+        let mut registry = <Registry>::with_prefix("dynode");
         registry.register(
             "proxy_requests_count",
             "How many requests the application has received",
