@@ -1,8 +1,9 @@
 port: 3000
 address: 0.0.0.0
 domains:
-  - domain: localhost:3000
+  - domain: localhost:3001
     chain_type: ethereum
+    poll_interval_seconds: 10
     urls:
       - url: https://eth.llamarpc.com
         headers:
@@ -14,17 +15,16 @@ domains:
         #  x-api-key: test2
         #
       - url: https://rpc.ankr.com/eth
-    urls_override:
-      "/":
-        url: https://cloudflare-eth.com
 
   - domain: localhost:3002
     chain_type: bitcoin
     urls:
       - url: https://blockbook.btc.zelcore.io
 
-  - domain: localhost:3003
+  - domain: localhost:3000
     chain_type: solana
+    poll_interval_seconds: 15
+    block_delay: 5
     urls:
       - url: https://api.mainnet-beta.solana.com
       - url: https://api.tatum.io/v3/blockchain/node/solana-mainnet
@@ -57,12 +57,15 @@ domains:
 
   - domain: localhost:3009
     chain_type: xrp
+    poll_interval_seconds: 30
     urls:
       - url: https://s1.ripple.com:51234
       - url: https://s2.ripple.com:51234
 
   - domain: localhost:3010
     chain_type: near
+    poll_interval_seconds: 60
+    block_delay: 5
     urls:
       - url: https://rpc.mainnet.near.org
       - url: https://free.rpc.fastnear.com

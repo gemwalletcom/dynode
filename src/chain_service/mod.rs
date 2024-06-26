@@ -25,7 +25,7 @@ pub struct ChainService {
 }
 
 impl ChainService {
-    pub async fn get_block_number(&self) -> Result<u64, Box<dyn std::error::Error>> {
+    pub async fn get_block_number(&self) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
         match self.chain_type {
             ChainType::Ethereum => {
                 let block_hex = self
@@ -108,7 +108,7 @@ impl ChainService {
         &self,
         method: &str,
         params: Option<Value>,
-    ) -> Result<T, Box<dyn std::error::Error>> {
+    ) -> Result<T, Box<dyn std::error::Error + Send + Sync>> {
         let client =
             Client::builder(hyper_util::rt::TokioExecutor::new()).build(HttpsConnector::new());
         let uri = self.url.parse::<hyper::Uri>().expect("invalid url");
@@ -129,7 +129,7 @@ impl ChainService {
             .uri(uri)
             .body(body)?;
 
-        let res = client.request(req).await.unwrap();
+        let res = client.request(req).await?;
         let body = res.collect().await?.to_bytes();
 
         Ok(serde_json::from_reader(body.reader())?)
@@ -139,7 +139,7 @@ impl ChainService {
         &self,
         mathod: Method,
         path: &str,
-    ) -> Result<T, Box<dyn std::error::Error>> {
+    ) -> Result<T, Box<dyn std::error::Error + Send + Sync>> {
         let client =
             Client::builder(hyper_util::rt::TokioExecutor::new()).build(HttpsConnector::new());
         let uri = self.url.clone() + path;
@@ -151,7 +151,7 @@ impl ChainService {
             .uri(uri)
             .body(Empty::<Bytes>::new())?;
 
-        let res = client.request(req).await.unwrap();
+        let res = client.request(req).await?;
         let body = res.collect().await?.to_bytes();
 
         Ok(serde_json::from_reader(body.reader())?)

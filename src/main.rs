@@ -16,26 +16,20 @@ use tokio::net::TcpListener;
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let config = config::NodeConfig::new().unwrap();
 
-    println!("config: {:?}", config);
+    //println!("config: {:?}", config);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
-
     let listener = TcpListener::bind(addr).await?;
-
-    let node_service = NodeService {
-        domains: config.domains_map(),
-    };
-
-    // let clone = node_service.clone();
-    // tokio::task::spawn(async move {
-    //     clone.clone().update_block_numbers().await;
-    // });
+    let node_service = NodeService::new(config.domains_map());
+    let node_service_clone = node_service.clone();
+    tokio::task::spawn(async move {
+        node_service_clone.update_block_numbers().await;
+    });
 
     loop {
         let (stream, _) = listener.accept().await?;
         let io = TokioIo::new(stream);
-
-        let service = node_service.get_proxy_request().clone();
+        let service = node_service.clone().get_proxy_request().await.clone();
 
         tokio::task::spawn(async move {
             if let Err(err) = http1::Builder::new().serve_connection(io, service).await {

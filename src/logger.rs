@@ -12,7 +12,7 @@ pub fn log_incoming_request(request: &Request<IncomingBody>) {
         .unwrap_or_default();
 
     println!(
-        "incoming request: {} {} {} {:?}",
+        "main service: request {} {} {} {:?}",
         host,
         request.method(),
         request.uri(),
@@ -22,7 +22,7 @@ pub fn log_incoming_request(request: &Request<IncomingBody>) {
 
 pub fn log_proxy_response(request: &RequestUrl, response: &Response<IncomingBody>) {
     println!(
-        "proxy response: {:?} {}",
+        "proxy service: {:?} {}",
         request.uri.host().unwrap_or_default(),
         response.status()
     );

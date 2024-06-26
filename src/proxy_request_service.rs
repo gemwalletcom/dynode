@@ -25,7 +25,6 @@ pub struct ProxyRequestService {
 #[derive(Debug, Clone)]
 pub struct NodeDomain {
     pub url: Url,
-    pub urls_override: HashMap<String, Url>,
 }
 
 impl Service<Request<IncomingBody>> for ProxyRequestService {
@@ -46,7 +45,11 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
         match self.domains.get(host) {
             Some(domain) => {
                 let url = domain.url.clone();
-                let url = RequestUrl::from_uri(url, domain.urls_override.clone(), req.uri());
+                let url = RequestUrl::from_uri(
+                    url.clone(),
+                    url.urls_override.clone().unwrap_or_default(),
+                    req.uri(),
+                );
 
                 async move { proxy_pass(req, url).await }.boxed()
             }
