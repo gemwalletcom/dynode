@@ -34,7 +34,7 @@ impl Metrics {
         let proxy_requests = Family::<HostStateLabels, Counter>::default();
         let proxy_response_latency =
             Family::<ResponseLabels, Histogram>::new_with_constructor(|| {
-                Histogram::new(exponential_buckets(50.0, 2.0, 10))
+                Histogram::new(exponential_buckets(50.0, 1.6, 12))
             });
         let node_block_latest = Family::<HostStateLabels, Gauge>::default();
 
