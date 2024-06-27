@@ -26,7 +26,7 @@ pub struct HostStateLabels {
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
 pub struct HostCurrentStateLabels {
     host: String,
-    host_remote: String,
+    remote_host: String,
 }
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug, EncodeLabelSet)]
@@ -99,7 +99,7 @@ impl Metrics {
         self.node_host_current
             .get_or_create(&HostCurrentStateLabels {
                 host: host.to_string(),
-                host_remote: remote_host.to_string(),
+                remote_host: remote_host.to_string(),
             })
             .set(1);
     }
