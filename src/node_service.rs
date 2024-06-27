@@ -17,7 +17,7 @@ use crate::{
 pub struct NodeService {
     pub domains: HashMap<String, Domain>,
     pub nodes: Arc<Mutex<HashMap<String, NodeDomain>>>,
-    pub metrics: Metrics,
+    pub metrics: Arc<Metrics>,
 }
 
 #[derive(Debug)]
@@ -47,14 +47,14 @@ impl NodeService {
         Self {
             domains,
             nodes: Arc::new(Mutex::new(hash_map)),
-            metrics,
+            metrics: Arc::new(metrics),
         }
     }
 
     pub async fn get_proxy_request(&self) -> ProxyRequestService {
         ProxyRequestService {
             domains: self.get_node_domains().await,
-            metrics: self.metrics.clone(),
+            metrics: self.metrics.as_ref().clone(),
         }
     }
 
@@ -80,10 +80,14 @@ impl NodeService {
 
     pub async fn update_block_numbers(&self) {
         for (_, domain) in self.domains.clone() {
+            self.metrics
+                .set_node_host_current(&domain.domain, &domain.urls.first().unwrap().url);
+
             if domain.urls.len() > 1 {
                 let domain = domain.clone();
 
                 let nodes = Arc::clone(&self.nodes);
+                //let metrics = Arc::clone(&self.metrics);
 
                 tokio::task::spawn(async move {
                     loop {

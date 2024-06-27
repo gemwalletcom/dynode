@@ -14,12 +14,19 @@ pub struct Metrics {
     registry: Arc<Registry>,
     proxy_requests: Family<HostStateLabels, Counter>,
     proxy_response_latency: Family<ResponseLabels, Histogram>,
+    node_host_current: Family<HostCurrentStateLabels, Gauge>,
     node_block_latest: Family<HostStateLabels, Gauge>,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
 pub struct HostStateLabels {
     host: String,
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
+pub struct HostCurrentStateLabels {
+    host: String,
+    host_remote: String,
 }
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug, EncodeLabelSet)]
@@ -34,8 +41,9 @@ impl Metrics {
         let proxy_requests = Family::<HostStateLabels, Counter>::default();
         let proxy_response_latency =
             Family::<ResponseLabels, Histogram>::new_with_constructor(|| {
-                Histogram::new(exponential_buckets(50.0, 1.6, 12))
+                Histogram::new(exponential_buckets(50.0, 1.44, 12))
             });
+        let node_host_current = Family::<HostCurrentStateLabels, Gauge>::default();
         let node_block_latest = Family::<HostStateLabels, Gauge>::default();
 
         let mut registry = <Registry>::with_prefix("dynode");
@@ -50,6 +58,11 @@ impl Metrics {
             proxy_response_latency.clone(),
         );
         registry.register(
+            "node_host_current",
+            "Node current host url",
+            node_host_current.clone(),
+        );
+        registry.register(
             "node_block_latest",
             "Node block latest",
             node_block_latest.clone(),
@@ -59,6 +72,7 @@ impl Metrics {
             registry: Arc::new(registry),
             proxy_requests,
             proxy_response_latency,
+            node_host_current,
             node_block_latest,
         }
     }
@@ -79,6 +93,15 @@ impl Metrics {
                 status,
             })
             .observe(latency as f64);
+    }
+
+    pub fn set_node_host_current(&self, host: &str, remote_host: &str) {
+        self.node_host_current
+            .get_or_create(&HostCurrentStateLabels {
+                host: host.to_string(),
+                host_remote: remote_host.to_string(),
+            })
+            .set(1);
     }
 
     pub fn set_node_block_latest(&self, host: &str, value: u64) {
