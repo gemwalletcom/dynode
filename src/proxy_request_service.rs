@@ -68,6 +68,7 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
 
                     metrics.add_proxy_response(
                         host.as_str(),
+                        url.uri.path(),
                         url.uri.host().unwrap_or_default(),
                         response.status().as_u16(),
                         now.elapsed().as_millis(),

@@ -33,6 +33,7 @@ pub struct HostCurrentStateLabels {
 struct ResponseLabels {
     host: String,
     remote_host: String,
+    path: String,
     status: u16,
 }
 
@@ -85,10 +86,32 @@ impl Metrics {
             .inc();
     }
 
-    pub fn add_proxy_response(&self, host: &str, remote_host: &str, status: u16, latency: u128) {
+    fn truncate_path(&self, path: &str) -> String {
+        path.split('/')
+            .map(|segment| {
+                if segment.len() > 20 {
+                    ":value".to_string()
+                } else {
+                    segment.to_string()
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("/")
+    }
+
+    pub fn add_proxy_response(
+        &self,
+        host: &str,
+        path: &str,
+        remote_host: &str,
+        status: u16,
+        latency: u128,
+    ) {
+        let path = self.truncate_path(path);
         self.proxy_response_latency
             .get_or_create(&ResponseLabels {
                 host: host.to_string(),
+                path,
                 remote_host: remote_host.to_string(),
                 status,
             })
