@@ -17,3 +17,4 @@ hyper-tls = { version = "0.6.0" }
 http-body-util = { version = "0.1.2" }
 futures = { version = "0.3.30" }
 prometheus-client = { version = "0.22.2" }
+primitives = { git = "https://github.com/gemwalletcom/core.git", rev = "24095bc" }

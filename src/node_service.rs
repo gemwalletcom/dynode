@@ -6,9 +6,9 @@ use tokio::time::{sleep, Duration};
 
 use crate::config::Url;
 use crate::metrics::Metrics;
+use primitives::ChainType;
 use crate::{
     chain_service::ChainService,
-    chain_type::ChainType,
     config::Domain,
     proxy_request_service::{NodeDomain, ProxyRequestService},
 };

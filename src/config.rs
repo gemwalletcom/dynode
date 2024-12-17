@@ -5,7 +5,8 @@ use std::{collections::HashMap, env, hash::Hasher};
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 
-use crate::{chain_type::ChainType, node_service::NodeResult, proxy_request_service::NodeDomain};
+use primitives::{ChainType};
+use crate::{node_service::NodeResult, proxy_request_service::NodeDomain};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct NodeConfig {

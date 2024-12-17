@@ -16,8 +16,7 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use serde_json::to_vec;
-
-use crate::chain_type::ChainType;
+use primitives::ChainType;
 
 pub struct ChainService {
     pub chain_type: ChainType,

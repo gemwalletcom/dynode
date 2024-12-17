@@ -1,5 +1,4 @@
 mod chain_service;
-mod chain_type;
 mod config;
 mod logger;
 mod metrics;
