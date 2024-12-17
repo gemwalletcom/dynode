@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use futures::future;
@@ -95,20 +96,23 @@ impl NodeService {
                             .clone()
                             .urls
                             .iter()
-                            .map(|url| {
+                            .flat_map(|url| {
                                 let chain_type = domain.chain_type.clone();
                                 let url = url.clone();
-                                tokio::spawn(async move {
-                                    let now = Instant::now();
-                                    let result =
-                                        Self::get_latest_block(chain_type, &url.url.as_str()).await;
+                                if let Some(chain_type) = ChainType::from_str(&chain_type).ok() {
+                                    Some(tokio::spawn(async move {
+                                        let now = Instant::now();
+                                        let result = Self::get_latest_block(chain_type, &url.url.as_str()).await;
 
-                                    NodeRawResult {
-                                        url: url.clone(),
-                                        result,
-                                        latency: now.elapsed().as_millis() as u64,
-                                    }
-                                })
+                                        NodeRawResult {
+                                            url: url.clone(),
+                                            result,
+                                            latency: now.elapsed().as_millis() as u64,
+                                        }
+                                    }))
+                                } else {
+                                    None
+                                }
                             })
                             .collect();
 

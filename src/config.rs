@@ -35,7 +35,7 @@ pub struct Metrics {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Domain {
     pub domain: String,
-    pub chain_type: ChainType,
+    pub chain_type: String,
     pub block_delay: Option<u64>,
     pub poll_interval_seconds: Option<u64>,
     pub urls: Vec<Url>,

@@ -73,3 +73,10 @@ domains:
     urls:
       - url: https://rpc.mainnet.near.org
       - url: https://free.rpc.fastnear.com
+  
+  - domain: localhost:3011
+    chain_type: unknown
+    poll_interval_seconds: 60
+    block_delay: 5
+    urls:
+      - url: https://rpc.mainnet.near.org
