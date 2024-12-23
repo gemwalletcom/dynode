@@ -95,9 +95,11 @@ impl ProxyRequestService {
         let keep_headers = vec![header::CONTENT_TYPE, header::CONTENT_ENCODING];
 
         let resp_headers = response.headers().clone();
+        let status =  response.status();
         let body = response.collect().await?.to_bytes();
 
         let mut new_response = Response::new(Full::from(body));
+        *new_response.status_mut() = status;
         *new_response.headers_mut() = Self::persist_headers(&resp_headers, &keep_headers);
 
         Ok(new_response)
