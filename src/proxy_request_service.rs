@@ -36,12 +36,19 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn call(&self, req: Request<IncomingBody>) -> Self::Future {
-        let host = req
-            .headers()
+        let headers = req.headers().clone();
+        
+        let host = headers
             .get("host")
             .expect("invalid host")
             .to_str()
             .unwrap_or_default();
+
+        let user_agent = headers
+            .get("user-agent")
+            .expect("invalid user-agent")
+            .to_str()
+            .unwrap_or_default().to_string();
 
         log_incoming_request(&req);
 
@@ -70,6 +77,7 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
                         host.as_str(),
                         url.uri.path(),
                         url.uri.host().unwrap_or_default(),
+                        user_agent.as_str(),
                         response.status().as_u16(),
                         now.elapsed().as_millis(),
                     );

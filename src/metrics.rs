@@ -35,6 +35,7 @@ struct ResponseLabels {
     remote_host: String,
     path: String,
     status: u16,
+    user_agent: String,
 }
 
 impl Metrics {
@@ -104,6 +105,7 @@ impl Metrics {
         host: &str,
         path: &str,
         remote_host: &str,
+        user_agent: &str,
         status: u16,
         latency: u128,
     ) {
@@ -114,6 +116,7 @@ impl Metrics {
                 path,
                 remote_host: remote_host.to_string(),
                 status,
+                user_agent: user_agent.to_string(),
             })
             .observe(latency as f64);
     }
