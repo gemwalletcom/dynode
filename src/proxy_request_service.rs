@@ -61,7 +61,7 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
                     req.uri(),
                 );
 
-                self.metrics.add_proxy_request(host);
+                self.metrics.add_proxy_request(host, &user_agent);
 
                 let metrics = self.metrics.clone();
                 let host = host.to_string();
@@ -77,7 +77,6 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
                         host.as_str(),
                         url.uri.path(),
                         url.uri.host().unwrap_or_default(),
-                        user_agent.as_str(),
                         response.status().as_u16(),
                         now.elapsed().as_millis(),
                     );

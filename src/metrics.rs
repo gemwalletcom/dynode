@@ -12,10 +12,16 @@ use prometheus_client::registry::Registry;
 #[derive(Debug, Clone)]
 pub struct Metrics {
     registry: Arc<Registry>,
-    proxy_requests: Family<HostStateLabels, Counter>,
+    proxy_requests: Family<ProxyRequestLabels, Counter>,
     proxy_response_latency: Family<ResponseLabels, Histogram>,
     node_host_current: Family<HostCurrentStateLabels, Gauge>,
     node_block_latest: Family<HostStateLabels, Gauge>,
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
+pub struct ProxyRequestLabels {
+    host: String,
+    user_agent: String,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
@@ -35,12 +41,11 @@ struct ResponseLabels {
     remote_host: String,
     path: String,
     status: u16,
-    user_agent: String,
 }
 
 impl Metrics {
     pub fn new() -> Self {
-        let proxy_requests = Family::<HostStateLabels, Counter>::default();
+        let proxy_requests = Family::<ProxyRequestLabels, Counter>::default();
         let proxy_response_latency =
             Family::<ResponseLabels, Histogram>::new_with_constructor(|| {
                 Histogram::new(exponential_buckets(50.0, 1.44, 12))
@@ -79,10 +84,11 @@ impl Metrics {
         }
     }
 
-    pub fn add_proxy_request(&self, host: &str) {
+    pub fn add_proxy_request(&self, host: &str, user_agent: &str) {
         self.proxy_requests
-            .get_or_create(&HostStateLabels {
+            .get_or_create(&ProxyRequestLabels {
                 host: host.to_string(),
+                user_agent: user_agent.to_string(),
             })
             .inc();
     }
@@ -105,7 +111,6 @@ impl Metrics {
         host: &str,
         path: &str,
         remote_host: &str,
-        user_agent: &str,
         status: u16,
         latency: u128,
     ) {
@@ -116,7 +121,6 @@ impl Metrics {
                 path,
                 remote_host: remote_host.to_string(),
                 status,
-                user_agent: user_agent.to_string(),
             })
             .observe(latency as f64);
     }
