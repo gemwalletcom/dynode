@@ -13,6 +13,7 @@ use prometheus_client::registry::Registry;
 pub struct Metrics {
     registry: Arc<Registry>,
     proxy_requests: Family<ProxyRequestLabels, Counter>,
+    proxy_requests_by_user_agent: Family<ProxyRequestByAgentLabels, Gauge>,
     proxy_response_latency: Family<ResponseLabels, Histogram>,
     node_host_current: Family<HostCurrentStateLabels, Gauge>,
     node_block_latest: Family<HostStateLabels, Gauge>,
@@ -20,6 +21,11 @@ pub struct Metrics {
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
 pub struct ProxyRequestLabels {
+    host: String,
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
+pub struct ProxyRequestByAgentLabels {
     host: String,
     user_agent: String,
 }
@@ -46,6 +52,7 @@ struct ResponseLabels {
 impl Metrics {
     pub fn new() -> Self {
         let proxy_requests = Family::<ProxyRequestLabels, Counter>::default();
+        let proxy_requests_by_user_agent = Family::<ProxyRequestByAgentLabels, Gauge>::default();
         let proxy_response_latency =
             Family::<ResponseLabels, Histogram>::new_with_constructor(|| {
                 Histogram::new(exponential_buckets(50.0, 1.44, 12))
@@ -58,6 +65,11 @@ impl Metrics {
             "proxy_requests",
             "Proxy requests by host",
             proxy_requests.clone(),
+        );
+        registry.register(
+            "proxy_requests_by_user_agent",
+            "Proxy requests by host and user agent",
+            proxy_requests_by_user_agent.clone(),
         );
         registry.register(
             "proxy_response_latency",
@@ -78,6 +90,7 @@ impl Metrics {
         Self {
             registry: Arc::new(registry),
             proxy_requests,
+            proxy_requests_by_user_agent,
             proxy_response_latency,
             node_host_current,
             node_block_latest,
@@ -88,9 +101,14 @@ impl Metrics {
         self.proxy_requests
             .get_or_create(&ProxyRequestLabels {
                 host: host.to_string(),
-                user_agent: user_agent.to_string(),
             })
             .inc();
+
+        self.proxy_requests_by_user_agent
+            .get_or_create(&ProxyRequestByAgentLabels {
+                host: host.to_string(),
+                user_agent: user_agent.to_string(),
+            }).inc();
     }
 
     fn truncate_path(&self, path: &str) -> String {
