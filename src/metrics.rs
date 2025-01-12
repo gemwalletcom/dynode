@@ -67,7 +67,7 @@ impl Metrics {
             proxy_requests.clone(),
         );
         registry.register(
-            "proxy_requests_by_user_agent",
+            "proxy_requests_by_user_agent_total",
             "Proxy requests by host and user agent",
             proxy_requests_by_user_agent.clone(),
         );
