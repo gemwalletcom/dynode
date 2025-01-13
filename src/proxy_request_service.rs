@@ -46,8 +46,7 @@ impl Service<Request<IncomingBody>> for ProxyRequestService {
 
         let user_agent = headers
             .get("user-agent")
-            .expect("invalid user-agent")
-            .to_str()
+            .map(|x| x.to_str().unwrap_or_default())
             .unwrap_or_default().to_string();
 
         log_incoming_request(&req);
