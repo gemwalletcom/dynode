@@ -16,9 +16,14 @@ impl RequestUrl {
         url_override: HashMap<String, Url>,
         original_uri: &Uri,
     ) -> RequestUrl {
-        let uri = url.url + original_uri.to_string().as_str();
+        let path = if original_uri.path() == "/" {
+            String::new()
+        } else {
+            original_uri.to_string()
+        };
+        let uri = url.url + &path;
         let uri = uri.parse::<hyper::Uri>().expect("invalid url");
-
+        
         for (path, endpoint) in url_override.clone() {
             if uri.path() == path {
                 let uri = Uri::from_str(&endpoint.url.clone().as_str()).unwrap();
