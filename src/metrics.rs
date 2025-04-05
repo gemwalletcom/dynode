@@ -1,13 +1,13 @@
 use std::sync::Arc;
-
 use prometheus_client::encoding::text::encode;
 use prometheus_client::encoding::EncodeLabelSet;
-
 use prometheus_client::metrics::counter::Counter;
 use prometheus_client::metrics::family::Family;
 use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::{exponential_buckets, Histogram};
 use prometheus_client::registry::Registry;
+use regex::Regex;
+use crate::config::MetricsConfig;
 
 #[derive(Debug, Clone)]
 pub struct Metrics {
@@ -16,7 +16,9 @@ pub struct Metrics {
     proxy_requests_by_user_agent: Family<ProxyRequestByAgentLabels, Gauge>,
     proxy_response_latency: Family<ResponseLabels, Histogram>,
     node_host_current: Family<HostCurrentStateLabels, Gauge>,
+    #[allow(dead_code)]
     node_block_latest: Family<HostStateLabels, Gauge>,
+    config: Arc<MetricsConfig>,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
@@ -50,7 +52,7 @@ struct ResponseLabels {
 }
 
 impl Metrics {
-    pub fn new() -> Self {
+    pub fn new(config: MetricsConfig) -> Self {
         let proxy_requests = Family::<ProxyRequestLabels, Counter>::default();
         let proxy_requests_by_user_agent = Family::<ProxyRequestByAgentLabels, Gauge>::default();
         let proxy_response_latency =
@@ -94,7 +96,21 @@ impl Metrics {
             proxy_response_latency,
             node_host_current,
             node_block_latest,
+            config: Arc::new(config),
         }
+    }
+
+    fn categorize_user_agent(&self, user_agent: &str) -> String {
+        for (category, patterns) in &self.config.user_agent_patterns.patterns {
+            for pattern in patterns {
+                if let Ok(re) = Regex::new(pattern) {
+                    if re.is_match(user_agent) {
+                        return category.clone();
+                    }
+                }
+            }
+        }
+        "unknown".to_string()
     }
 
     pub fn add_proxy_request(&self, host: &str, user_agent: &str) {
@@ -104,11 +120,13 @@ impl Metrics {
             })
             .inc();
 
+        let categorized_agent = self.categorize_user_agent(user_agent);
         self.proxy_requests_by_user_agent
             .get_or_create(&ProxyRequestByAgentLabels {
                 host: host.to_string(),
-                user_agent: user_agent.to_string(),
-            }).inc();
+                user_agent: categorized_agent,
+            })
+            .inc();
     }
 
     fn truncate_path(&self, path: &str) -> String {
@@ -152,6 +170,7 @@ impl Metrics {
             .set(1);
     }
 
+    #[allow(dead_code)]
     pub fn set_node_block_latest(&self, host: &str, value: u64) {
         self.node_block_latest
             .get_or_create(&HostStateLabels {

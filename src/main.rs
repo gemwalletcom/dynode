@@ -18,6 +18,7 @@ use std::{
     str::FromStr,
 };
 use tokio::net::TcpListener;
+use crate::config::MetricsConfig;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -32,7 +33,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let node_listener = TcpListener::bind(node_address).await?;
     let metrics_listener = TcpListener::bind(metrics_address).await?;
 
-    let metrics = Metrics::new();
+    let metrics_config = MetricsConfig {
+        user_agent_patterns: config.metrics.user_agent_patterns.clone(),
+    };
+    let metrics = Metrics::new(metrics_config);
     let node_service = NodeService::new(config.domains_map(), metrics.clone());
     let node_service_clone = node_service.clone();
     tokio::task::spawn(async move {

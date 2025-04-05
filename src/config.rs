@@ -30,6 +30,19 @@ impl NodeConfig {
 pub struct Metrics {
     pub port: u16,
     pub address: String,
+    #[serde(default)]
+    pub user_agent_patterns: UserAgentPatterns,
+}
+
+#[derive(Debug, Clone)]
+pub struct MetricsConfig {
+    pub user_agent_patterns: UserAgentPatterns,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct UserAgentPatterns {
+    #[serde(default)]
+    pub patterns: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -186,6 +186,7 @@ impl NodeService {
         chain_service.get_block_number().await
     }
 
+    #[allow(dead_code)]
     pub async fn update_latest_block(chain_type: ChainType, url: &str) {
         let chain_service = ChainService {
             chain_type: chain_type.clone(),
