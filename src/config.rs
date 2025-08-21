@@ -1,6 +1,4 @@
-#![allow(unused)]
-
-use std::{collections::HashMap, env, hash::Hasher};
+use std::{collections::HashMap, env};
 
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;

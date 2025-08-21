@@ -136,7 +136,7 @@ impl ChainService {
 
     pub async fn get_data<T: DeserializeOwned>(
         &self,
-        mathod: Method,
+        method: Method,
         path: &str,
     ) -> Result<T, Box<dyn std::error::Error + Send + Sync>> {
         let client =
@@ -145,7 +145,7 @@ impl ChainService {
         let uri = uri.parse::<hyper::Uri>().expect("invalid url");
 
         let req = Request::builder()
-            .method(mathod)
+            .method(method)
             .header(header::CONTENT_TYPE, "application/json")
             .uri(uri)
             .body(Empty::<Bytes>::new())?;

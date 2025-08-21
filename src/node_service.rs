@@ -99,10 +99,10 @@ impl NodeService {
                             .flat_map(|url| {
                                 let chain_type = domain.chain_type.clone();
                                 let url = url.clone();
-                                if let Some(chain_type) = ChainType::from_str(&chain_type).ok() {
+                                if let Ok(chain_type) = ChainType::from_str(&chain_type) {
                                     Some(tokio::spawn(async move {
                                         let now = Instant::now();
-                                        let result = Self::get_latest_block(chain_type, &url.url.as_str()).await;
+                                        let result = Self::get_latest_block(chain_type, url.url.as_str()).await;
 
                                         NodeRawResult {
                                             url: url.clone(),
